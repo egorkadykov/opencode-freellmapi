@@ -41,10 +41,12 @@ test("includeUnavailable keeps entries the router marks as unavailable", () => {
   assert.deepEqual(discoverModels(payload).map((m) => m.id), ["auto"]);
 
   const all = discoverModels(payload, { includeUnavailable: true });
-  assert.deepEqual(all.map((m) => m.id), ["glm-5.3", "auto"]);
-  assert.equal(all[0].available, false);
-  assert.equal(all[0].reason, "no_key");
-  assert.equal(all[1].reason, undefined);
+  assert.deepEqual(all.map((m) => m.id), ["auto", "glm-5.3"]);
+  const unavailable = all.find((m) => m.id === "glm-5.3");
+  const available = all.find((m) => m.id === "auto");
+  assert.equal(unavailable.available, false);
+  assert.equal(unavailable.reason, "no_key");
+  assert.equal(available.reason, undefined);
 });
 
 test("fetchModels forwards includeUnavailable to the parser", async () => {
@@ -105,4 +107,22 @@ test("fetchModels builds the models url and returns an empty list on failure", a
 test("fetchModels requires both endpoint and key", async () => {
   assert.deepEqual(await fetchModels("", "key"), []);
   assert.deepEqual(await fetchModels("http://127.0.0.1:3001/v1", ""), []);
+});
+
+test("sorts models by capability, with an opt-out", () => {
+  const payload = [
+    { id: "small", name: "Small 1b", context_length: 100000 },
+    { id: "huge", name: "Huge 120b", context_length: 10000 },
+    { id: "auto", name: "Auto" },
+    { id: "medium", name: "Medium 27b" },
+  ];
+
+  assert.deepEqual(
+    discoverModels(payload).map((m) => m.id),
+    ["auto", "huge", "medium", "small"],
+  );
+  assert.deepEqual(
+    discoverModels(payload, { sortByPower: false }).map((m) => m.id),
+    ["small", "huge", "auto", "medium"],
+  );
 });

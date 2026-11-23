@@ -27,13 +27,14 @@ function readOptions(ctx) {
     baseURL: typeof options.baseURL === "string" ? options.baseURL : undefined,
     apiKey: typeof options.apiKey === "string" ? options.apiKey : undefined,
     includeUnavailable: options.includeUnavailable !== false,
+    sortByPower: options.sortByPower !== false,
   };
 }
 
 export default Plugin.define({
   id: "freellmapi",
   async setup(ctx) {
-    const { baseURL, apiKey, includeUnavailable } = readOptions(ctx);
+    const { baseURL, apiKey, includeUnavailable, sortByPower } = readOptions(ctx);
     if (!baseURL || !apiKey) {
       console.warn(
         "[freellmapi] baseURL and apiKey are required in the plugin options; model sync skipped",
@@ -46,7 +47,7 @@ export default Plugin.define({
     const state = { infos: [], unavailable: 0 };
 
     const load = async () => {
-      const discovered = await fetchModels(baseURL, apiKey, { includeUnavailable });
+      const discovered = await fetchModels(baseURL, apiKey, { includeUnavailable, sortByPower });
       if (!discovered.length) return false;
       state.infos = toModelInfos(discovered);
       state.unavailable = discovered.filter((model) => !model.available).length;
